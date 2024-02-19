@@ -7,4 +7,5 @@ add_executable(JPEG_Analysis main.cpp
         imageData.h
         RGBtoY.h
         additiveNoise.h
-        impulseNoise.h)
+        impulseNoise.h
+        PSNR.h)

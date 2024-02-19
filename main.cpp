@@ -47,9 +47,11 @@ int main(int argc, char* argv[]) {
 
     // Additive noise model with Gaussian random variable with distribution N(0, σ^2)
     additiveNoise(fileHeader, infoHeader, Y, H, W, 10, outputPath + "additiveNoise.bmp");
+    additiveNoiseGraph(Y, H, W, 5.0, 20.0, 1.0, outputPath + "additiveNoiseGraph.txt");
 
     // Impulse noise model
     impulseNoise(fileHeader, infoHeader, Y, H, W, 0.1, 0.1, outputPath + "impulseNoise.bmp");
+    //impulseNoiseGraph(Y, H, W, 20, 20, outputPath + "impulseNoiseGraph.txt");
 
     Y.clear();
 }
