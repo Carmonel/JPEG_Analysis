@@ -1,20 +1,23 @@
-#ifndef JPEG_ANALYSIS_MOVINGAVERAGE_H
-#define JPEG_ANALYSIS_MOVINGAVERAGE_H
+#ifndef JPEG_ANALYSIS_MEDIANFILTER_H
+#define JPEG_ANALYSIS_MEDIANFILTER_H
 
 #include <vector>
 #include <string>
 #include <Windows.h>
 #include <fstream>
+#include <iostream>
 
 #include "Utils.h"
+#include "PSNR.h"
 
-int findMinMovingAveragePSNR(std::vector<std::vector<unsigned char>>& Y, int H, int W, int R_max){
+int findMinMedianFilterPSNR(std::vector<std::vector<unsigned char>>& Y, int H, int W, int R_max){
     std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
 
     double minPSNR = 11110;
     int R_save;
     #pragma omp parallel for
     for (int R = 0; R < R_max; R++){
+        R = (2*R + 1) * (2*R + 1);
         for (int i = 0; i < H; i++){
             for (int j = 0; j < W; j++){
                 double newYint = 0;
@@ -47,11 +50,13 @@ int findMinMovingAveragePSNR(std::vector<std::vector<unsigned char>>& Y, int H, 
     return R_save;
 }
 
-void movingAverage(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, std::vector<std::vector<unsigned char>>& Y, int H, int W, int R, const std::string& outputPath){
+void medianFilter(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, std::vector<std::vector<unsigned char>>& Y, int H, int W, int R, const std::string& outputPath){
     std::ofstream file(outputPath, std::ios::out | std::ios::binary);
     file.write(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
     file.write(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
     std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
+
+    R = (2*R + 1) * (2*R + 1);
 
     for (int i = 0; i < H; i++){
         for (int j = 0; j < W; j++){
@@ -79,4 +84,4 @@ void movingAverage(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, std
     file.close();
 }
 
-#endif //JPEG_ANALYSIS_MOVINGAVERAGE_H
+#endif //JPEG_ANALYSIS_MEDIANFILTER_H

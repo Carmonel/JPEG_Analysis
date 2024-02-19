@@ -7,8 +7,6 @@
 #include <fstream>
 #include <random>
 
-#include "changeFileToDots.h"
-
 void impulseNoiseGraph(std::vector<std::vector<unsigned char>>& Y, int H, int W, int i, int j, const std::string& outputPath){
     std::ofstream file(outputPath);
     double stepM = 1.0 / abs(i);
@@ -55,8 +53,6 @@ void impulseNoiseGraph(std::vector<std::vector<unsigned char>>& Y, int H, int W,
     std::cout << outputPath + " created." << std::endl;
 
     file.close();
-
-    changeFileToDots(outputPath);
 }
 
 std::vector<std::vector<unsigned char>> impulseNoise(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, std::vector<std::vector<unsigned char>>& Y, int H, int W, double p_a, double p_b, const std::string& outputPath){

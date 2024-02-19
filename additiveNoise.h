@@ -8,7 +8,6 @@
 
 #include "Utils.h"
 #include "PSNR.h"
-#include "changeFileToDots.h"
 
 void additiveNoiseGraph(const std::vector<std::vector<unsigned char>>& Y, int H, int W, double start, double end, double step, const std::string& outputPath){
     std::ofstream file(outputPath);

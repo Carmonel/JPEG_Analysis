@@ -10,4 +10,6 @@ add_executable(JPEG_Analysis main.cpp
         impulseNoise.h
         PSNR.h
         movingAverage.h
-        changeFileToDots.h)
+        gaussianFilter.h
+        medianFilter.h
+        laplaceOperator.h)
