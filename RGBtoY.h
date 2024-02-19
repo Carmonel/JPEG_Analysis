@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "imageData.h"
+#include "Utils.h"
 
 std::vector<std::vector<unsigned char>> RGBtoY(const std::vector<std::vector<RGBPixel>>& pixels, int H, int W){
     std::vector<std::vector<unsigned char>> result(H, std::vector<unsigned char>(W, 0));

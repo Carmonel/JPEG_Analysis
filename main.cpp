@@ -3,10 +3,11 @@
 #include "Windows.h"
 #include <vector>
 
-#include "imageData.h"
+#include "Utils.h"
 #include "RGBtoY.h"
 #include "additiveNoise.h"
 #include "impulseNoise.h"
+#include "movingAverage.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 3){
@@ -46,12 +47,24 @@ int main(int argc, char* argv[]) {
     pixels.clear();
 
     // Additive noise model with Gaussian random variable with distribution N(0, σ^2)
-    additiveNoise(fileHeader, infoHeader, Y, H, W, 10, outputPath + "additiveNoise.bmp");
-    additiveNoiseGraph(Y, H, W, 5.0, 20.0, 1.0, outputPath + "additiveNoiseGraph.txt");
+    std::vector<std::vector<unsigned char>> additiveY = additiveNoise(fileHeader, infoHeader, Y, H, W, 10, outputPath + "additiveNoise.bmp");
+    // 1st - start value
+    // 2nd - end value
+    // 3rd - step value
+    additiveNoiseGraph(Y, H, W, 5.0, 20.0, 0.1, outputPath + "additiveNoiseGraph.txt");
 
     // Impulse noise model
-    impulseNoise(fileHeader, infoHeader, Y, H, W, 0.1, 0.1, outputPath + "impulseNoise.bmp");
+    std::vector<std::vector<unsigned char>> impulseY = impulseNoise(fileHeader, infoHeader, Y, H, W, 0.1, 0.1, outputPath + "impulseNoise.bmp");
+    // 1st - p_a steps count
+    // 2nd - p_b steps count
     //impulseNoiseGraph(Y, H, W, 20, 20, outputPath + "impulseNoiseGraph.txt");
 
+    // Moving average
+    // Argument - R = [0; R_max]
+    int minMovingAverageAddictive = findMinMovingAveragePSNR(fileHeader, infoHeader, additiveY, H, W, 15);
+    movingAverage(fileHeader, infoHeader, additiveY, H, W, minMovingAverageAddictive, outputPath + "minMovingAverageAddictive.bmp");
+
+    impulseY.clear();
+    additiveY.clear();
     Y.clear();
 }

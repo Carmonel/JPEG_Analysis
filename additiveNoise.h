@@ -6,8 +6,9 @@
 #include <random>
 #include <ctime>
 
-#include "imageData.h"
+#include "Utils.h"
 #include "PSNR.h"
+#include "changeFileToDots.h"
 
 void additiveNoiseGraph(const std::vector<std::vector<unsigned char>>& Y, int H, int W, double start, double end, double step, const std::string& outputPath){
     std::ofstream file(outputPath);
@@ -15,6 +16,7 @@ void additiveNoiseGraph(const std::vector<std::vector<unsigned char>>& Y, int H,
     std::mt19937 gen(rd());
 
     double gaussianStandartDeviation = start;
+    #pragma omp parallel for
     while (gaussianStandartDeviation <= end){
         std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
         for (int i = 0; i < H; i++){
@@ -25,17 +27,20 @@ void additiveNoiseGraph(const std::vector<std::vector<unsigned char>>& Y, int H,
             }
         }
         double psnr = PSNR(Y, newYVec, H, W);
-        file << gaussianStandartDeviation << "=" << (std::isinf(psnr)? 0: psnr) << std::endl;
+        #pragma omp critical
+        {
+            file << "'" << gaussianStandartDeviation << "='" << (std::isinf(psnr)? 0: psnr) << std::endl;
+        };
         newYVec.clear();
         gaussianStandartDeviation += step;
     }
 
-    std::cout << "additiveNoiseGraph.txt created." << std::endl;
-
+    std::cout << outputPath + " created." << std::endl;
+    //changeFileToDots(outputPath);
     file.close();
 }
 
-void additiveNoise(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, const std::vector<std::vector<unsigned char>>& Y, int H, int W, double gaussianStandartDeviation, const std::string& outputPath){
+std::vector<std::vector<unsigned char>> additiveNoise(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, const std::vector<std::vector<unsigned char>>& Y, int H, int W, double gaussianStandartDeviation, const std::string& outputPath){
     std::ofstream file(outputPath, std::ios::out | std::ios::binary);
     file.write(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
     file.write(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
@@ -55,11 +60,10 @@ void additiveNoise(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, con
         }
     }
 
-    std::cout << "additiveNoise.bmp created." << std::endl;
-    std::cout << "PSNR = " << PSNR(Y, newYVec, H, W) << std::endl;
+    std::cout << outputPath + " created; PSNR = " << PSNR(Y, newYVec, H, W) << std::endl;
 
-    newYVec.clear();
     file.close();
+    return newYVec;
 }
 
 #endif //JPEG_ANALYSIS_ADDITIVENOISE_H

@@ -1,5 +1,5 @@
-#ifndef JPEG_ANALYSIS_IMAGEDATA_H
-#define JPEG_ANALYSIS_IMAGEDATA_H
+#ifndef JPEG_ANALYSIS_UTILS_H
+#define JPEG_ANALYSIS_UTILS_H
 
 #include <fstream>
 
@@ -24,4 +24,4 @@ struct RGBPixel{
     }
 };
 
-#endif //JPEG_ANALYSIS_IMAGEDATA_H
+#endif //JPEG_ANALYSIS_UTILS_H
