@@ -14,7 +14,6 @@ std::vector<std::vector<unsigned char>> laplaceOperator(BITMAPFILEHEADER fileHea
     file.write(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
     std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
 
-
     for (int i = 0; i < H; i++){
         for (int j = 0; j < W; j++){
             if ((i == H - 1) || (i == 0) || (j == W - 1) || (j == 0)){
@@ -24,7 +23,7 @@ std::vector<std::vector<unsigned char>> laplaceOperator(BITMAPFILEHEADER fileHea
                 file.write(reinterpret_cast<char*>(&Y[i][j]), sizeof(unsigned char));
                 continue;
             }
-            unsigned char newY = clipping((Y[i][j + 1] + Y[i][j - 1] + Y[i + 1][j] + Y[i - 1][j]) - 4 * Y[i][j]);
+            unsigned char newY = clipping(Y[i][j] + ((Y[i][j + 1] + Y[i][j - 1] + Y[i + 1][j] + Y[i - 1][j]) - 4 * Y[i][j]));
             newYVec[i][j] = newY;
             file.write(reinterpret_cast<char*>(&newY), sizeof(unsigned char));
             file.write(reinterpret_cast<char*>(&newY), sizeof(unsigned char));

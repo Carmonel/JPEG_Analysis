@@ -12,4 +12,5 @@ add_executable(JPEG_Analysis main.cpp
         movingAverage.h
         gaussianFilter.h
         medianFilter.h
-        laplaceOperator.h)
+        laplaceOperator.h
+        parallel.h)

@@ -8,10 +8,10 @@
 
 #include "Utils.h"
 
-int findMinMovingAveragePSNR(std::vector<std::vector<unsigned char>>& Y, int H, int W, int R_max){
+int findMinMovingAveragePSNR(std::vector<std::vector<unsigned char>>& Y, int H, int W, int R_max, int sigma){
     std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
 
-    double minPSNR = 11110;
+    double minPSNR = -4000;
     int R_save;
     #pragma omp parallel for
     for (int R = 0; R < R_max; R++){
@@ -34,14 +34,14 @@ int findMinMovingAveragePSNR(std::vector<std::vector<unsigned char>>& Y, int H, 
         double psnr = PSNR(Y, newYVec, H, W);
         #pragma omp critical
         {
-            if (abs(psnr) < abs(minPSNR)){
+            if (psnr > minPSNR){
                 minPSNR = psnr;
                 R_save = R;
             }
         }
     }
 
-    std::cout << "Minimum PSNR for MovingAverage = " << minPSNR << "; R = " << R_save << std::endl;
+    std::cout << "Minimum PSNR for MovingAverage for sigma(" << sigma << ") = " << minPSNR << "; R = " << R_save << std::endl;
 
     newYVec.clear();
     return R_save;

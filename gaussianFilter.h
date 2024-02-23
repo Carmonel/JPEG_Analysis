@@ -7,15 +7,16 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <thread>
 
 #include "Utils.h"
 #include "PSNR.h"
 
-double w(int k, int m, int b){
+double w(double k, int m, double b){
     return exp((-(k * k + m * m))/(2 * b * b));
 }
 
-double Z(int R, int b){
+double Z(double R, double b){
     double result = 0;
     for (int k = -R; k <= R; k++){
         for (int m = -R; m <= R; m++){
@@ -25,12 +26,11 @@ double Z(int R, int b){
     return result;
 }
 
-void gaussianFilterGraph(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, std::vector<std::vector<unsigned char>>& Y, int H, int W, int R, int b_max, const std::string& outputPath){
+void gaussianFilterGraph(std::vector<std::vector<unsigned char>>& Y, int H, int W, int R, const std::string& outputPath){
     std::ofstream file(outputPath);
+    double sigma[] = {0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2};
 
-    #pragma omp parallel for
-    for (int b = -b_max; b < b_max; b++){
-        if (b == 0) continue;
+    for (int s = 0; s < 8; s++){
         std::vector<std::vector<unsigned char>> newYVec(H, std::vector<unsigned char>(W, 0));
         for (int i = 0; i < H; i++){
             for (int j = 0; j < W; j++){
@@ -42,16 +42,13 @@ void gaussianFilterGraph(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeade
                         newYint += Y[i + m][j + n];
                     }
                 }
-                newYint /= Z(R, b);
+                newYint /= Z(R, sigma[s]);
                 unsigned char newY = clipping(newYint);
                 newYVec[i][j] = newY;
             }
         }
         double psnr = PSNR(Y, newYVec, H, W);
-        #pragma omp critical
-        {
-            file << b << "=" << (std::isinf(psnr)? 0: psnr) << std::endl;
-        }
+        file << sigma[s] << "=" << (std::isinf(psnr)? 0: psnr) << std::endl;
         newYVec.clear();
     }
 
@@ -130,5 +127,12 @@ void gaussianFilter(BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, st
     newYVec.clear();
     file.close();
 }
+
+void createGaussanFilterGraphs(std::vector<std::vector<unsigned char>>& additiveY80, std::vector<std::vector<unsigned char>>& additiveY50,
+                               std::vector<std::vector<unsigned char>>& additiveY30, std::vector<std::vector<unsigned char>>& additiveY10,
+                               std::vector<std::vector<unsigned char>>& additiveY1, int H, int W, const std::string& outputPath) {
+
+}
+
 
 #endif //JPEG_ANALYSIS_GAUSSIANFILTER_H

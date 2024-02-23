@@ -11,6 +11,7 @@
 #include "gaussianFilter.h"
 #include "medianFilter.h"
 #include "laplaceOperator.h"
+#include "parallel.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 3){
@@ -49,43 +50,88 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<unsigned char>> Y = RGBtoY(pixels, H, W);
     pixels.clear();
 
-    // Additive noise model with Gaussian random variable with distribution N(0, σ^2)
-    //std::vector<std::vector<unsigned char>> additiveY = additiveNoise(fileHeader, infoHeader, Y, H, W, 10, outputPath + "additiveNoise.bmp");
+    std::vector<std::thread> threads;
+
+    ///
+    /// Additive noise model with Gaussian random variable with distribution N(0, σ^2) (1, 3)
+    ///
+    auto computeAdditiveNoise = [](BITMAPFILEHEADER fileHeader, BITMAPINFOHEADER infoHeader, const std::vector<std::vector<unsigned char>>& Y,
+                                   int H, int W, int noiseLevel, const std::string& outputPath) {
+        return additiveNoise(fileHeader, infoHeader, Y, H, W, noiseLevel, outputPath);
+    };
+    std::vector<std::vector<unsigned char>> additiveY80, additiveY50, additiveY30, additiveY10, additiveY1;
+    threads.emplace_back([&]() { additiveY80 = computeAdditiveNoise(fileHeader, infoHeader, Y, H, W, 80, outputPath + "AdditiveNoise\\additiveNoise80.bmp"); });
+    threads.emplace_back([&]() { additiveY50 = computeAdditiveNoise(fileHeader, infoHeader, Y, H, W, 50, outputPath + "AdditiveNoise\\additiveNoise50.bmp"); });
+    threads.emplace_back([&]() { additiveY30 = computeAdditiveNoise(fileHeader, infoHeader, Y, H, W, 30, outputPath + "AdditiveNoise\\additiveNoise30.bmp"); });
+    threads.emplace_back([&]() { additiveY10 = computeAdditiveNoise(fileHeader, infoHeader, Y, H, W, 10, outputPath + "AdditiveNoise\\additiveNoise10.bmp"); });
+    threads.emplace_back([&]() { additiveY1 = computeAdditiveNoise(fileHeader, infoHeader, Y, H, W, 1, outputPath + "AdditiveNoise\\additiveNoise1.bmp"); });
+    for (auto& t : threads) {
+        t.join();
+    }
     // 1st - start value
     // 2nd - end value
     // 3rd - step value
-    //additiveNoiseGraph(Y, H, W, 5.0, 20.0, 0.1, outputPath + "additiveNoiseGraph.txt");
+    //additiveNoiseGraph(Y, H, W, 5.0, 20.0, 1, outputPath + "AdditiveNoise\\additiveNoiseGraph.txt");
+    threads.clear();
 
-    // Impulse noise model
-    //std::vector<std::vector<unsigned char>> impulseY = impulseNoise(fileHeader, infoHeader, Y, H, W, 0.1, 0.1, outputPath + "impulseNoise.bmp");
-    //impulseNoise(fileHeader, infoHeader, Y, H, W, 0.025, 0.025, outputPath + "impulseNoise_5.bmp");
-    //impulseNoise(fileHeader, infoHeader, Y, H, W, 0.05, 0.05, outputPath + "impulseNoise_10.bmp");
-    //impulseNoise(fileHeader, infoHeader, Y, H, W, 0.175, 0.175, outputPath + "impulseNoise_25.bmp");
-    //impulseNoise(fileHeader, infoHeader, Y, H, W, 0.25, 0.25, outputPath + "impulseNoise_50.bmp");
-    // 1st - p_a steps count
-    // 2nd - p_b steps count
-    //impulseNoiseGraph(Y, H, W, 20, 20, outputPath + "impulseNoiseGraph.txt");
+    ///
+    /// Impulse noise model (2, 3)
+    ///
+    impulseNoise(fileHeader, infoHeader, Y, H, W, 0.025, 0.025, outputPath + "impulseNoise_5.bmp");
+    impulseNoise(fileHeader, infoHeader, Y, H, W, 0.05, 0.05, outputPath + "impulseNoise_10.bmp");
+    impulseNoise(fileHeader, infoHeader, Y, H, W, 0.125, 0.125, outputPath + "impulseNoise_25.bmp");
+    impulseNoise(fileHeader, infoHeader, Y, H, W, 0.25, 0.25, outputPath + "impulseNoise_50.bmp");
 
-    // Moving average
-    // Argument - R = [0; R_max]
-    //int minMovingAverageAddictive = findMinMovingAveragePSNR(additiveY, H, W, 15);
-    //movingAverage(fileHeader, infoHeader, additiveY, H, W, minMovingAverageAddictive, outputPath + "minMovingAverageAddictive.bmp");
 
-    // Gaussian Filter
+    ///
+    /// Moving average (4.1 - 4.2)
+    ///
+    auto calculateMinMovingAverage = [](std::vector<std::vector<unsigned char>>& additiveY, int H, int W, int value) {
+        return findMinMovingAveragePSNR(additiveY, H, W, 15, value);
+    };
+    int minMovingAverageAddictive80, minMovingAverageAddictive50, minMovingAverageAddictive30, minMovingAverageAddictive10, minMovingAverageAddictive1;
+    threads.emplace_back([&](){ minMovingAverageAddictive80 = calculateMinMovingAverage(additiveY80, H, W, 80); });
+    threads.emplace_back([&](){ minMovingAverageAddictive50 = calculateMinMovingAverage(additiveY50, H, W, 50); });
+    threads.emplace_back([&](){ minMovingAverageAddictive30 = calculateMinMovingAverage(additiveY30, H, W, 30); });
+    threads.emplace_back([&](){ minMovingAverageAddictive10 = calculateMinMovingAverage(additiveY10, H, W, 10); });
+    threads.emplace_back([&](){ minMovingAverageAddictive1 = calculateMinMovingAverage(additiveY1, H, W, 1); });
+    for (auto& t : threads) {
+        t.join();
+    }
+    threads.clear();
+    movingAverage(fileHeader, infoHeader, additiveY50, H, W, minMovingAverageAddictive50, outputPath + "MovingAverage\\minMovingAverageAddictive50.bmp");
+    movingAverage(fileHeader, infoHeader, additiveY30, H, W, minMovingAverageAddictive30, outputPath + "MovingAverage\\minMovingAverageAddictive30.bmp");
+    movingAverage(fileHeader, infoHeader, additiveY10, H, W, minMovingAverageAddictive10, outputPath + "MovingAverage\\minMovingAverageAddictive10.bmp");
+    movingAverage(fileHeader, infoHeader, additiveY1, H, W, minMovingAverageAddictive1, outputPath + "MovingAverage\\minMovingAverageAddictive1.bmp");
+    movingAverage(fileHeader, infoHeader, additiveY80, H, W, minMovingAverageAddictive80, outputPath + "MovingAverage\\minMovingAverageAddictive80.bmp");
+
+    ///
+    /// Gaussian Filter
+    ///
     // Argument - b = [1; b_max]
-    //int minGaussianFilterAddictive = findMinGaussianFilter(additiveY, H, W, 2, 10);
-    //gaussianFilter(fileHeader, infoHeader, additiveY, H, W, 2, minGaussianFilterAddictive, outputPath + "minGaussianFilterAddictive.bmp");
-    // Argument - b = [-b_max; b_max]
-    //gaussianFilterGraph(fileHeader, infoHeader, additiveY, H, W, 2, 10, outputPath + "gaussianFilterGraph_2.txt");
-    //gaussianFilterGraph(fileHeader, infoHeader, additiveY, H, W, 3, 10, outputPath + "gaussianFilterGraph_3.txt");
-    //gaussianFilterGraph(fileHeader, infoHeader, additiveY, H, W, 5, 10, outputPath + "gaussianFilterGraph_5.txt");
+    gaussianFilterGraph(additiveY80, H, W, 1, outputPath + "GaussianFilter\\GF_80_1.txt");
+    gaussianFilterGraph(additiveY50, H, W, 1, outputPath + "GaussianFilter\\GF_50_1.txt");
+    gaussianFilterGraph(additiveY30, H, W, 1, outputPath + "GaussianFilter\\GF_30_1.txt");
+    gaussianFilterGraph(additiveY10, H, W, 1, outputPath + "GaussianFilter\\GF_10_1.txt");
+    gaussianFilterGraph(additiveY1, H, W, 1, outputPath + "GaussianFilter\\GF_1_1.txt");
 
-    // Median Filter
-    //int minMedianFilterAddictive = findMinGaussianFilter(additiveY, H, W, 2, 10);
-    //medianFilter(fileHeader, infoHeader, additiveY, H, W, minMedianFilterAddictive, outputPath + "minGaussianFilterAddictive.bmp");
+    gaussianFilterGraph(additiveY80, H, W, 3, outputPath + "GaussianFilter\\GF_80_3.txt");
+    gaussianFilterGraph(additiveY50, H, W, 3, outputPath + "GaussianFilter\\GF_50_3.txt");
+    gaussianFilterGraph(additiveY30, H, W, 3, outputPath + "GaussianFilter\\GF_30_3.txt");
+    gaussianFilterGraph(additiveY10, H, W, 3, outputPath + "GaussianFilter\\GF_10_3.txt");
+    gaussianFilterGraph(additiveY1, H, W, 3, outputPath + "GaussianFilter\\GF_1_3.txt");
 
-    // Laplace operator
-    laplaceOperator(fileHeader, infoHeader, Y, H, W, outputPath + "laplaceOperator.bmp");
+    gaussianFilterGraph(additiveY80, H, W, 5, outputPath + "GaussianFilter\\GF_80_5.txt");
+    gaussianFilterGraph(additiveY50, H, W, 5, outputPath + "GaussianFilter\\GF_50_5.txt");
+    gaussianFilterGraph(additiveY30, H, W, 5, outputPath + "GaussianFilter\\GF_30_5.txt");
+    gaussianFilterGraph(additiveY10, H, W, 5, outputPath + "GaussianFilter\\GF_10_5.txt");
+    gaussianFilterGraph(additiveY1, H, W, 5, outputPath + "GaussianFilter\\GF_1_5.txt");
+
+    ///
+    /// Median Filter
+    ///
+    //int minMedianFilterAddictive = findM(additiveY80, H, W, 2, 10);
+    //medianFilter(fileHeader, infoHeader, additiveY80, H, W, minMedianFilterAddictive, outputPath + "MedianFilter\\minMedianFilterAddictive.bmp");
 
     //impulseY.clear();
     //additiveY.clear();
